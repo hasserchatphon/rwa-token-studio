@@ -6,6 +6,8 @@ This repository is designed as a polished GitHub base for exploring asset tokeni
 
 ![RWA Token Studio dashboard](docs/assets/rwa-token-studio-dashboard.png)
 
+Live demo: <https://hasserchatphon.github.io/rwa-token-studio/>
+
 ## What It Includes
 
 - Asset catalog with real-world asset style data.
