@@ -5,8 +5,11 @@ RWA Token Studio separates product rules from presentation so the demo can grow 
 ## Layers
 
 ```text
+apps/api
+  Fastify routes, Prisma Client persistence, SQLite setup, API tests
+
 apps/web
-  React screens, local UI state, simulated admin actions
+  React screens, API client, static fallback data, local visual assets
 
 packages/domain
   Asset, investor, ledger, and purchase validation rules
@@ -20,11 +23,19 @@ docs
 
 ## Current Runtime
 
-The first version is intentionally frontend-led. Data is seeded in `packages/domain`, then managed in local React state. This makes the repo simple to run and review on GitHub.
+The GitHub Pages version is frontend-only and uses static demo data from `packages/domain`.
+
+The local full-stack version runs:
+
+- `apps/api` on Fastify with SQLite persistence.
+- `packages/domain` for shared purchase validation and portfolio math.
+- `apps/web` with `VITE_API_URL` pointing at the API.
+
+The API initializes its local SQLite tables through a checked-in schema helper and uses Prisma Client for all reads/writes. This avoids depending on migration tooling for the educational prototype while still keeping a Prisma schema beside the database model.
 
 ## Future Backend Boundary
 
-A production-grade version would move these responsibilities to an API:
+A production-grade version would harden these API responsibilities:
 
 - Asset issuance lifecycle.
 - Investor identity and eligibility checks.
@@ -33,9 +44,8 @@ A production-grade version would move these responsibilities to an API:
 - Document storage and disclosure versioning.
 - Portfolio reporting and tax exports.
 
-The React app should call that API through a typed client rather than importing seed data directly.
+The React app already has a typed API client. It falls back to seed data only when `VITE_API_URL` is not configured.
 
 ## Smart Contract Boundary
 
 The contract in `contracts/` is a reference design only. It shows allowlisted transfers and owner-controlled minting, but it is not audited and is not compiled by the default CI gate.
-

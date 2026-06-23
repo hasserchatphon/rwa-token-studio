@@ -11,4 +11,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.tsbuildinfo
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
 

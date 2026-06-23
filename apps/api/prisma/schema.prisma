@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Asset {
+  id                        String          @id
+  slug                      String          @unique
+  name                      String
+  sponsor                   String
+  category                  String
+  location                  String
+  description               String
+  imageUrl                  String
+  tokenSymbol               String
+  tokenSupply               Int
+  tokenPriceCents           Int
+  tokensSold                Int
+  minTokensPerOrder         Int
+  maxTokensPerInvestor      Int
+  acceptedJurisdictionsJson String
+  distributionRateBps       Int
+  riskRating                String
+  maturityDate              String?
+  highlightsJson            String
+  complianceNotesJson       String
+  documents                 AssetDocument[]
+  holdings                  Holding[]
+  ledgerEntries             LedgerEntry[]
+  orders                    Order[]
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+}
+
+model AssetDocument {
+  id        String @id
+  assetId   String
+  title     String
+  kind      String
+  updatedAt String
+  asset     Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model Investor {
+  id               String        @id
+  name             String
+  jurisdiction     String
+  kycStatus        String
+  cashBalanceCents Int
+  holdings         Holding[]
+  ledgerEntries    LedgerEntry[]
+  orders           Order[]
+}
+
+model Holding {
+  id         String   @id @default(cuid())
+  investorId String
+  assetId    String
+  tokens     Int
+  investor   Investor @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, assetId])
+}
+
+model Order {
+  id          String   @id
+  assetId     String
+  investorId  String
+  tokens      Int
+  amountCents Int
+  status      String
+  createdAt   String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  investor    Investor @relation(fields: [investorId], references: [id])
+}
+
+model LedgerEntry {
+  id          String   @id
+  assetId     String
+  investorId  String
+  type        String
+  tokens      Int
+  amountCents Int
+  createdAt   String
+  status      String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  investor    Investor @relation(fields: [investorId], references: [id])
+}
+

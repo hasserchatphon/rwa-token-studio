@@ -11,11 +11,18 @@ import {
   ShieldCheck,
   Wallet
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import creditImage from "./assets/asset-credit.png";
 import logisticsImage from "./assets/asset-logistics.png";
 import propertyImage from "./assets/asset-property.png";
 import solarImage from "./assets/asset-solar.png";
+import {
+  ApiError,
+  createAsset,
+  createOrder,
+  getStudioState,
+  hasApiBaseUrl
+} from "./api";
 import {
   AssetCategory,
   LedgerEntry,
@@ -76,12 +83,20 @@ const assetImageMap: Record<string, string> = {
   asset_credit_01: creditImage
 };
 
-const demoAssetsWithImages: TokenizedAsset[] = demoAssets.map((asset) => ({
-  ...asset,
-  imageUrl: assetImageMap[asset.id] ?? propertyImage
-}));
+function withLocalAssetImage(asset: TokenizedAsset): TokenizedAsset {
+  return {
+    ...asset,
+    imageUrl:
+      assetImageMap[asset.id] ??
+      (asset.imageUrl === "local:property" ? propertyImage : asset.imageUrl)
+  };
+}
+
+const demoAssetsWithImages: TokenizedAsset[] =
+  demoAssets.map(withLocalAssetImage);
 
 function App() {
+  const apiEnabled = hasApiBaseUrl();
   const [assets, setAssets] = useState<TokenizedAsset[]>(demoAssetsWithImages);
   const [investor, setInvestor] = useState(demoInvestor);
   const [ledger, setLedger] = useState<LedgerEntry[]>(demoLedger);
@@ -92,6 +107,43 @@ function App() {
   const [orderQuantity, setOrderQuantity] = useState("250");
   const [orderMessage, setOrderMessage] = useState("");
   const [adminForm, setAdminForm] = useState<AdminAssetForm>(starterForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!apiEnabled) {
+      return;
+    }
+
+    let active = true;
+
+    getStudioState()
+      .then((state) => {
+        if (!active) {
+          return;
+        }
+
+        const nextAssets = state.assets.map(withLocalAssetImage);
+        setAssets(nextAssets);
+        setInvestor(state.investor);
+        setLedger(state.ledger);
+        setSelectedAssetId((current) =>
+          nextAssets.some((asset) => asset.id === current)
+            ? current
+            : nextAssets[0]?.id ?? current
+        );
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return;
+        }
+
+        setOrderMessage(messageFromError(error));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [apiEnabled]);
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? assets[0],
@@ -120,7 +172,7 @@ function App() {
       : undefined;
   }, [investor, orderQuantity, selectedAsset]);
 
-  function handlePurchase(event: FormEvent<HTMLFormElement>) {
+  async function handlePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedAsset || !selectedDecision) {
       return;
@@ -128,6 +180,30 @@ function App() {
 
     if (!selectedDecision.ok) {
       setOrderMessage(selectedDecision.message);
+      return;
+    }
+
+    if (apiEnabled) {
+      setIsSubmitting(true);
+      try {
+        const result = await createOrder(
+          selectedAsset.id,
+          selectedDecision.order.tokens
+        );
+        const nextAsset = withLocalAssetImage(result.asset);
+        setAssets((current) =>
+          current.map((asset) => (asset.id === nextAsset.id ? nextAsset : asset))
+        );
+        setInvestor(result.investor);
+        setLedger((current) => [result.ledgerEntry, ...current]);
+        setOrderMessage(
+          `${result.order.tokens.toLocaleString()} ${nextAsset.tokenSymbol} settled.`
+        );
+      } catch (error) {
+        setOrderMessage(messageFromError(error));
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -146,7 +222,7 @@ function App() {
     );
   }
 
-  function handleCreateAsset(event: FormEvent<HTMLFormElement>) {
+  async function handleCreateAsset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const tokenSupply = Number(adminForm.tokenSupply);
@@ -166,6 +242,33 @@ function App() {
       tokenPriceCents <= 0 ||
       distributionRateBps < 0
     ) {
+      return;
+    }
+
+    if (apiEnabled) {
+      setIsSubmitting(true);
+      try {
+        const result = await createAsset({
+          name: adminForm.name.trim(),
+          category: adminForm.category,
+          tokenSymbol: adminForm.tokenSymbol.trim().toUpperCase().slice(0, 8),
+          tokenSupply,
+          tokenPriceCents,
+          minTokensPerOrder,
+          distributionRateBps,
+          acceptedJurisdictions: ["US", "EU", "GB"]
+        });
+        const nextAsset = withLocalAssetImage(result.asset);
+        setAssets((current) => [nextAsset, ...current]);
+        setSelectedAssetId(nextAsset.id);
+        setViewMode("assets");
+        setAdminForm(starterForm);
+        setOrderMessage("");
+      } catch (error) {
+        setOrderMessage(messageFromError(error));
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -223,7 +326,11 @@ function App() {
           </div>
           <div>
             <h1>RWA Token Studio</h1>
-            <p>Simulated tokenized asset operations</p>
+            <p>
+              {apiEnabled
+                ? "API-backed tokenized asset operations"
+                : "Simulated tokenized asset operations"}
+            </p>
           </div>
         </div>
 
@@ -326,6 +433,7 @@ function App() {
             }
             onOrderQuantityChange={setOrderQuantity}
             onPurchase={handlePurchase}
+            isSubmitting={isSubmitting}
           />
         </section>
       ) : null}
@@ -374,7 +482,7 @@ function App() {
         <section className="admin-panel">
           <div className="panel-heading">
             <h2>Asset Setup</h2>
-            <span>Local draft</span>
+            <span>{apiEnabled ? "Server draft" : "Local draft"}</span>
           </div>
           <form className="admin-form" onSubmit={handleCreateAsset}>
             <label>
@@ -473,7 +581,11 @@ function App() {
                 }
               />
             </label>
-            <button className="primary-action" type="submit">
+            <button
+              className="primary-action"
+              disabled={isSubmitting}
+              type="submit"
+            >
               <Plus size={18} />
               Create Draft Asset
             </button>
@@ -509,6 +621,7 @@ function AssetDetail({
   orderQuantity,
   orderMessage,
   decisionMessage,
+  isSubmitting,
   onOrderQuantityChange,
   onPurchase
 }: {
@@ -516,8 +629,9 @@ function AssetDetail({
   orderQuantity: string;
   orderMessage: string;
   decisionMessage: string;
+  isSubmitting: boolean;
   onOrderQuantityChange: (value: string) => void;
-  onPurchase: (event: FormEvent<HTMLFormElement>) => void;
+  onPurchase: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
 }) {
   return (
     <article className="asset-detail">
@@ -599,7 +713,11 @@ function AssetDetail({
               onChange={(event) => onOrderQuantityChange(event.target.value)}
             />
           </label>
-          <button className="primary-action" type="submit">
+          <button
+            className="primary-action"
+            disabled={isSubmitting}
+            type="submit"
+          >
             <Coins size={18} />
             Simulate Purchase
           </button>
@@ -616,6 +734,18 @@ function AssetDetail({
       </div>
     </article>
   );
+}
+
+function messageFromError(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Request failed.";
 }
 
 export default App;

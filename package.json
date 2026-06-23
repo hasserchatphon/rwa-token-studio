@@ -9,10 +9,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm --workspace apps/web run dev",
-    "build": "npm --workspace packages/domain run build && npm --workspace apps/web run build",
+    "dev": "npm run dev:web",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:api": "npm --workspace apps/api run dev",
+    "db:init": "npm --workspace apps/api run db:init",
+    "db:seed": "npm --workspace apps/api run db:seed",
+    "build": "npm --workspace packages/domain run build && npm --workspace apps/api run build && npm --workspace apps/web run build",
     "lint": "eslint .",
-    "test": "npm --workspace packages/domain run test",
+    "test": "npm --workspace packages/domain run test && npm --workspace apps/api run test",
     "validate": "npm run lint && npm run test && npm run build"
   },
   "keywords": [
