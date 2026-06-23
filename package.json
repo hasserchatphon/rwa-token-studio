@@ -1,0 +1,46 @@
+{
+  "name": "rwa-token-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Educational real-world asset tokenization studio with simulated assets, compliance checks, wallet flows, and an ownership ledger.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace packages/domain run build && npm --workspace apps/web run build",
+    "lint": "eslint .",
+    "test": "npm --workspace packages/domain run test",
+    "validate": "npm run lint && npm run test && npm run build"
+  },
+  "keywords": [
+    "rwa",
+    "tokenization",
+    "real-world-assets",
+    "fintech",
+    "blockchain",
+    "typescript"
+  ],
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/node": "^24.0.3",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.5.2",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.1",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.4"
+  }
+}
