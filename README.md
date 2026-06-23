@@ -4,6 +4,8 @@ Educational real-world asset tokenization platform with simulated assets, wallet
 
 This repository is designed as a polished GitHub base for exploring asset tokenization product flows without handling real investor money, securities issuance, custody, KYC, or regulated transfers.
 
+![RWA Token Studio dashboard](docs/assets/rwa-token-studio-dashboard.png)
+
 ## What It Includes
 
 - Asset catalog with real-world asset style data.
@@ -57,4 +59,3 @@ Use it to demonstrate product thinking, data modeling, compliance-aware UX, and 
 3. Connect the simulated ledger to a testnet contract adapter.
 4. Add admin review states for KYC, accreditation, and jurisdiction rules.
 5. Add audit logs and exportable investor statements.
-

@@ -12,6 +12,10 @@ import {
   Wallet
 } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
+import creditImage from "./assets/asset-credit.png";
+import logisticsImage from "./assets/asset-logistics.png";
+import propertyImage from "./assets/asset-property.png";
+import solarImage from "./assets/asset-solar.png";
 import {
   AssetCategory,
   LedgerEntry,
@@ -66,11 +70,24 @@ const starterForm: AdminAssetForm = {
   distributionRate: "7.5"
 };
 
+const assetImageMap: Record<string, string> = {
+  asset_warehouse_01: logisticsImage,
+  asset_solar_01: solarImage,
+  asset_credit_01: creditImage
+};
+
+const demoAssetsWithImages: TokenizedAsset[] = demoAssets.map((asset) => ({
+  ...asset,
+  imageUrl: assetImageMap[asset.id] ?? propertyImage
+}));
+
 function App() {
-  const [assets, setAssets] = useState<TokenizedAsset[]>(demoAssets);
+  const [assets, setAssets] = useState<TokenizedAsset[]>(demoAssetsWithImages);
   const [investor, setInvestor] = useState(demoInvestor);
   const [ledger, setLedger] = useState<LedgerEntry[]>(demoLedger);
-  const [selectedAssetId, setSelectedAssetId] = useState(demoAssets[0].id);
+  const [selectedAssetId, setSelectedAssetId] = useState(
+    demoAssetsWithImages[0].id
+  );
   const [viewMode, setViewMode] = useState<ViewMode>("assets");
   const [orderQuantity, setOrderQuantity] = useState("250");
   const [orderMessage, setOrderMessage] = useState("");
@@ -161,8 +178,7 @@ function App() {
       location: "Demo Market",
       description:
         "Locally created demo asset with simulated issuance, compliance, and ledger behavior.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: propertyImage,
       tokenSymbol: adminForm.tokenSymbol.trim().toUpperCase().slice(0, 8),
       tokenSupply,
       tokenPriceCents,
@@ -603,4 +619,3 @@ function AssetDetail({
 }
 
 export default App;
-
